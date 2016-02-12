@@ -89,6 +89,7 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
     private Handler mHandler = new Handler();
     private Handler mHandler2 = new Handler();
     private float lastBeat = 0;
+    private float prevBeat = 0;
     private float saveBeat = 0;
     private String lasttimestr = "";
     private String savetimestr = "";
@@ -259,7 +260,7 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
     private void goBackLoop() {
 
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MINUTE, 3);
+        cal.add(Calendar.MINUTE, 5);
 
         Intent intent = new Intent(this, AlarmReceiver.class);
         intent.putExtra("msg", "StartLifeLog");
@@ -514,6 +515,9 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
             DataReadResult dataReadResult =
                     Fitness.HistoryApi.readData(mClient, readRequest).await(1, TimeUnit.MINUTES);
 
+
+            prevBeat = lastBeat;
+
             if (dataReadResult.getBuckets().size() > 0) {
                 Log.i(TAG, "Number of returned buckets of DataSets is: "
                         + dataReadResult.getBuckets().size());
@@ -572,9 +576,19 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
                 //beep(1);
                 savetimestr = lasttimestr;
 
-                String msgtext = "您的心跳" + String.valueOf(Math.round(lastBeat)) + ",最大心跳 " + String.valueOf(Math.round(largeBeat))  + ",於 " +  largeTime  + " ,變異數 " + FinalHRV ;
+                String remindtext = "";
+                if (lastBeat > prevBeat ) {
+                    remindtext = ",上升" + Math.round(lastBeat-prevBeat) ;
+                } else {
+                    remindtext = ",下降" + Math.round(prevBeat-lastBeat) ;
+                }
+
+                String msgtext = "心跳" + remindtext + " " + String.valueOf(Math.round(lastBeat)) + ",最大心跳 " + String.valueOf(Math.round(largeBeat))  + ",於 " +  largeTime  + " ,變異數 " + FinalHRV ;
                // tts.speak(msgtext, TextToSpeech.QUEUE_FLUSH, null);
-                tts.speak("心跳 " + String.valueOf(Math.round(lastBeat)), TextToSpeech.QUEUE_FLUSH, null);
+
+
+
+                tts.speak("心跳 " + String.valueOf(Math.round(lastBeat) + remindtext), TextToSpeech.QUEUE_FLUSH, null);
 
                 Message msg = Message.obtain(messageHandler);
                 msg.obj = msgtext;
