@@ -334,9 +334,9 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
                 .addApi(Fitness.HISTORY_API)
                 .addApi(Fitness.RECORDING_API)
                 //.addApi(Fitness.BLE_API)
-                //.addScope(new Scope(Scopes.FITNESS_BODY_READ))
-                .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
-                //.addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ))
+                .addScope(new Scope(Scopes.FITNESS_BODY_READ))
+                //.addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
+                .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ))
                 .addConnectionCallbacks(
                         new GoogleApiClient.ConnectionCallbacks() {
 
@@ -346,7 +346,7 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
                                 myTextView.append("Connected\r\n");
                                 // Now you can make calls to the Fitness APIs.
                                 // Put application specific code here.
-                                // findFitnessDataSources(); // for senior
+                                //findFitnessDataSources(); // for senior
                                 new readFitnessData().execute();
                                 //buildBle();
                                 subscribe();
