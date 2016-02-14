@@ -23,6 +23,14 @@ public class AlarmReceiver  extends BroadcastReceiver {
         if(bData.get("msg").equals("StartLifeLog"))
         {
 
+            Intent toret = new Intent();
+            toret.setAction("com.sonymobile.smartwear.action.FORCE_REFRESH");
+            context.sendBroadcast(toret);
+
+            MainActivity.closeActivity();
+
+
+            /*
             ActivityManager ama = (ActivityManager) context.getSystemService(context.ACTIVITY_SERVICE);
             List<ActivityManager.RunningTaskInfo> taskInfo = ama.getRunningTasks(1);
 
@@ -42,7 +50,7 @@ public class AlarmReceiver  extends BroadcastReceiver {
             PendingIntent pi = PendingIntent.getBroadcast(context, 1, i, PendingIntent.FLAG_ONE_SHOT);
 
             AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-            am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+            am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);*/
 
         } else if (bData.get("msg").equals("BackActivity")) {
             if (savePkgName != null) {

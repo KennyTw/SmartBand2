@@ -260,7 +260,7 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
     private void goBackLoop() {
 
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MINUTE, 5);
+        cal.add(Calendar.MINUTE, 1);
 
         Intent intent = new Intent(this, AlarmReceiver.class);
         intent.putExtra("msg", "StartLifeLog");
@@ -269,6 +269,9 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
 
         AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+
+        //beep(1);
+
 
     }
 
@@ -579,7 +582,7 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
                 String remindtext = "";
                 if (lastBeat > prevBeat ) {
                     remindtext = ",上升" + Math.round(lastBeat-prevBeat) ;
-                } else {
+                } else if (lastBeat < prevBeat ) {
                     remindtext = ",下降" + Math.round(prevBeat-lastBeat) ;
                 }
 
