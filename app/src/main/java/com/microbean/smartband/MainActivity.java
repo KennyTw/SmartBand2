@@ -3,6 +3,7 @@ package com.microbean.smartband;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
+import android.app.Application;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
@@ -69,8 +70,9 @@ import java.util.concurrent.TimeUnit;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.OnInitListener;
 
-public class MainActivity extends AppCompatActivity implements OnInitListener {
 
+public class MainActivity extends AppCompatActivity implements OnInitListener {
+    protected MyApp mMyApp;
     private static final int REQUEST_OAUTH = 1;
 
     /**
@@ -85,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
     private GoogleApiClient mClient = null;
     private OnDataPointListener mListener;
     private TextView myTextView = null;
-    private Handler messageHandler = null;
+    public Handler messageHandler = null;
     private Handler mHandler = new Handler();
     private Handler mHandler2 = new Handler();
     private float lastBeat = 0;
@@ -116,27 +118,49 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
 
     }
 
-    public static void closeActivity(){
-        //startAct = true;
+    public static boolean closeActivity(){
+      //  startAct = true;
         //context.finish();
        // context.moveTaskToBack(true);
-        context.myTextView.setText("");
-        context.mClient.disconnect();
-        context.HRV.clear();
+        if (context != null) {
+            context.myTextView.setText("");
+            context.mClient.disconnect();
+            context.HRV.clear();
 
-        context.onInit(0);
-        context.goBackLoop();
+            context.onInit(0);
+            context.goBackLoop();
+            return true;
+        } else {           //
+            Log.i(TAG, "MainActivity startActivity no context");
+            return false;
+        }
 
     }
 
+    private void clearReferences(){
+        Activity currActivity = mMyApp.getCurrentActivity();
+        if (this.equals(currActivity))
+            mMyApp.setCurrentActivity(null);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mMyApp.setCurrentActivity(this);
+
+        Intent intent = new Intent(this, MyService.class);
+        intent.putExtra("command", "setCurrentActivity");
+        startService(intent);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        context = this;
+        mMyApp = (MyApp)this.getApplicationContext();
+        //context = this;
 
         Log.i(TAG, "MainActivity onCreate");
-        tts = new TextToSpeech(this, this);
+        //tts = new TextToSpeech(this, this);
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -168,7 +192,11 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
         messageHandler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
-                myTextView.append(msg.obj.toString() + "\r\n");
+                if (msg.obj == null) {
+                    myTextView.setText("");
+                } else {
+                    myTextView.append(msg.obj.toString() + "\r\n");
+                }
             }
         };
 
@@ -176,9 +204,6 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
         if (savedInstanceState != null) {
             authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
         }
-
-
-
 
         final Runnable runnable2 = new Runnable() {
             public void run() {
@@ -235,13 +260,11 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
         //mHandler.post(runnable);
         //mHandler.postDelayed(runnable,1000 * 60 * 5);
 
-        goBackLoop();
+        //goBackLoop();
 
-       // Intent startIntent = new Intent(this, MyService.class);
-      //  startService(startIntent);
 
-        //Intent launchIntent = getPackageManager().getLaunchIntentForPackage("com.sonymobile.lifelog");
-        //startActivity(launchIntent);
+
+
 
        // Intent intent = new Intent();
        // intent.setClassName("com.sonymobile.hostapp.everest", "com.sonymobile.hostapp.everest.googlefit.HeartrateSensorService");
@@ -254,13 +277,12 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
 
 
 
-
     }
 
     private void goBackLoop() {
 
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MINUTE, 1);
+        cal.add(Calendar.MINUTE, 5);
 
         Intent intent = new Intent(this, AlarmReceiver.class);
         intent.putExtra("msg", "StartLifeLog");
@@ -279,6 +301,8 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
     @Override
     protected void onDestroy() {
         //Close the Text to Speech Library
+        clearReferences();
+        context = null;
         if(tts != null) {
 
             tts.stop();
@@ -294,7 +318,7 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
             Intent i = new Intent(getApplicationContext(), MainActivity.class);
             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(i);
-            moveTaskToBack(true);
+            //moveTaskToBack(true);
         }
         super.onDestroy();
     }
@@ -387,8 +411,9 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
                                     try {
                                         Log.i(TAG, "Attempting to resolve failed connection");
                                         authInProgress = true;
+
                                         result.startResolutionForResult(MainActivity.this,
-                                                REQUEST_OAUTH);
+                                                        REQUEST_OAUTH);
                                     } catch (IntentSender.SendIntentException e) {
                                         Log.e(TAG,
                                                 "Exception while starting resolution activity", e);
@@ -428,9 +453,9 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
 
         //cancelSubscription();
 
-        if (mClient.isConnected()) {
-            mClient.disconnect();
-        }
+        //if (mClient.isConnected()) {
+        //    mClient.disconnect();
+        //}
 
 
         finish();
@@ -442,10 +467,16 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
             authInProgress = false;
             if (resultCode == RESULT_OK) {
                 // Make sure the app is not already connected or attempting to connect
-                if (!mClient.isConnecting() && !mClient.isConnected()) {
+                /*if (!mClient.isConnecting() && !mClient.isConnected()) {
                     mClient.connect();
                     Log.i(TAG, "onActivityResult connect");
-                }
+                }*/
+
+                Intent intent = new Intent(this, MyService.class);
+                intent.putExtra("command", "onActivityResult");
+                intent.putExtra("value", -1);
+                startService(intent);
+
             }
         }
     }
@@ -586,7 +617,7 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
                     remindtext = ",下降" + Math.round(prevBeat-lastBeat) ;
                 }
 
-                String msgtext = "心跳" + remindtext + " " + String.valueOf(Math.round(lastBeat)) + ",最大心跳 " + String.valueOf(Math.round(largeBeat))  + ",於 " +  largeTime  + " ,變異數 " + FinalHRV ;
+                String msgtext = "心跳" + String.valueOf(Math.round(lastBeat)) + remindtext + " "  + ",最大心跳 " + String.valueOf(Math.round(largeBeat))  + ",於 " +  largeTime  + " ,變異數 " + FinalHRV ;
                // tts.speak(msgtext, TextToSpeech.QUEUE_FLUSH, null);
 
 

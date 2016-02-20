@@ -27,7 +27,13 @@ public class AlarmReceiver  extends BroadcastReceiver {
             toret.setAction("com.sonymobile.smartwear.action.FORCE_REFRESH");
             context.sendBroadcast(toret);
 
-            MainActivity.closeActivity();
+            boolean ok = MainActivity.closeActivity();
+
+            if (!ok) {
+                Intent i = new Intent(context.getApplicationContext(), MainActivity.class);
+                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                context.startActivity(i);
+            }
 
 
             /*
