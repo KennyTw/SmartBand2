@@ -106,8 +106,8 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
     @Override
     public void onInit(int status) {
         if (status == TextToSpeech.SUCCESS) {
-            //tts.setLanguage(Locale.getDefault());
-            tts.setLanguage(Locale.CHINESE);
+            tts.setLanguage(Locale.getDefault());
+            //tts.setLanguage(Locale.CHINESE);
 
 
         } else {
@@ -150,6 +150,9 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
 
         Intent intent = new Intent(this, MyService.class);
         intent.putExtra("command", "setCurrentActivity");
+
+        Log.i(TAG, "MainActivity type : " + getIntent().getStringExtra("type") );
+        intent.putExtra("type", getIntent().getStringExtra("type"));
         startService(intent);
     }
 
@@ -274,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
 
         //ComponentName componentInfo = taskInfo.get(0).topActivity;
         //componentInfo.getPackageName();
-
+       // moveTaskToBack(true);
 
 
     }
