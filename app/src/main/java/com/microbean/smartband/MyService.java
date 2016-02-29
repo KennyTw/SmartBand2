@@ -352,7 +352,8 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
        // if (!powerManager.isScreenOn()) {
        //
-       if(!type.equals("backActivity") && !powerManager.isScreenOn()) {
+      // if(!type.equals("backActivity") && !powerManager.isScreenOn()) {
+        if(!type.equals("backActivity") ) {
 
 
           // screenLock.acquire();
@@ -371,12 +372,12 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
             startActivity(launchIntent);
 
 
-           keylock.reenableKeyguard();
+
 
             final Runnable runnable = new Runnable() {
                 public void run() {
 
-                    //keylock.reenableKeyguard();
+                    keylock.reenableKeyguard();
                    // screenLock.release();
 
                     dowork();
@@ -397,7 +398,7 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
                 }
             };
 
-           mHandler.postDelayed(runnable,1000 * 5);
+           mHandler.postDelayed(runnable,1000 * 10);
            //mHandler.post(runnable);
 
 
@@ -442,9 +443,10 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
                     .read(DataType.TYPE_STEP_COUNT_DELTA)
                     .read(DataType.TYPE_ACTIVITY_SEGMENT)
                    // .read(DataType.TYPE_ACTIVITY_SAMPLE)
-                    //.read(DataType.TYPE_HEART_RATE_BPM)
-                    //.read(DataType.TYPE_CALORIES_EXPENDED)
+                    .read(DataType.TYPE_HEART_RATE_BPM)
+                   // .read(DataType.TYPE_CALORIES_EXPENDED)
                     //.read(DataType.TYPE_DISTANCE_DELTA)
+                    //.read(DataType.TYPE_LOCATION_TRACK)
 
                    // .read(dataSource)
 

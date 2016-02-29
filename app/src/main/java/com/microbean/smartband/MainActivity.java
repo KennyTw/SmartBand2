@@ -146,6 +146,9 @@ public class MainActivity extends AppCompatActivity implements OnInitListener {
     @Override
     protected void onResume() {
         super.onResume();
+
+        Log.i(TAG, "MainActivity onResume ");
+
         mMyApp.setCurrentActivity(this);
 
         Intent intent = new Intent(this, MyService.class);
