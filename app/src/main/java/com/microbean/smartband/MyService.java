@@ -12,9 +12,13 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.IntentSender;
+import android.graphics.Color;
+import android.graphics.PixelFormat;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.AsyncTask;
@@ -27,6 +31,10 @@ import android.speech.tts.TextToSpeech;
 import android.support.annotation.Nullable;
 import android.telephony.PhoneStateListener;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -90,6 +98,8 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
 
     PowerManager.WakeLock screenLock;
     KeyguardManager.KeyguardLock keylock;
+    WindowManager windowManager;
+    LayoutInflater inflater;
 
 
     private float lastBeat = 0;
@@ -120,15 +130,42 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
         screenLock = ((PowerManager)getSystemService(POWER_SERVICE)).newWakeLock(
                 PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "TAG");
 
+
+
+       // screenLock = ((PowerManager)getSystemService(POWER_SERVICE)).newWakeLock(
+       //         PowerManager.FULL_WAKE_LOCK, "TAG");
+
         KeyguardManager keyguardManager = (KeyguardManager)getSystemService(Activity.KEYGUARD_SERVICE);
         keylock = keyguardManager.newKeyguardLock(KEYGUARD_SERVICE);
+
+        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
 
         //Intent launchIntent = getPackageManager().getLaunchIntentForPackage("com.sonymobile.lifelog");
         //startActivity(launchIntent);
 
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
+        registerReceiver(screenReceiver, filter);
+
         mHandler = new Handler();
         tts = new TextToSpeech(this, this);
     }
+
+    BroadcastReceiver screenReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // TODO Auto-generated method stub
+            String action = intent.getAction();
+            if (action.equals(Intent.ACTION_SCREEN_ON)) {
+                keylock.reenableKeyguard();
+                Log.i(TAG, "ACTION_SCREEN_ON reenableKeyguard");
+            } else if (action.equals(Intent.ACTION_SCREEN_OFF)) {
+
+            }
+        }
+    };
 
     @Override
     public void onDestroy() {
@@ -223,8 +260,8 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
     @Override
     public void onInit(int status) {
         if (status == TextToSpeech.SUCCESS) {
-            //tts.setLanguage(Locale.getDefault());
-            tts.setLanguage(Locale.CHINESE);
+            tts.setLanguage(Locale.getDefault());
+            //tts.setLanguage(Locale.CHINESE);
         } else {
             Log.e("TTS", "Initialization failed");
         }
@@ -256,9 +293,6 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
         final MainActivity currentActivity = (MainActivity) ((MyApp) getApplicationContext()).getCurrentActivity();
         // currentActivity.onBackPressed();
         // currentActivity.onBackPressed();
-
-
-
 
         writeMsg(null);
         //myTextView.setText("");
@@ -340,9 +374,9 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
     }
     private void buildFitnessClient(String type) {
 
-        Intent toret = new Intent();
+        /*Intent toret = new Intent();
         toret.setAction("com.sonymobile.smartwear.action.FORCE_REFRESH");
-        getApplicationContext().sendBroadcast(toret);
+        getApplicationContext().sendBroadcast(toret);*/
 
 
         /*Intent toretxiaomi = new Intent();
@@ -352,17 +386,59 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
        // if (!powerManager.isScreenOn()) {
        //
-      // if(!type.equals("backActivity") && !powerManager.isScreenOn()) {
-        if(!type.equals("backActivity") ) {
+
+        Log.i(TAG, "isScreenOn : " + powerManager.isScreenOn());
+
+       if(!type.equals("backActivity") && !powerManager.isScreenOn()) {
+       //if(!type.equals("backActivity") ) {
 
 
-          // screenLock.acquire();
+           View row = inflater.inflate(R.layout.myview, null);
+           final TextView winview = (TextView) row.findViewById(R.id.myview);
+
+           final Runnable runnableUI = new Runnable() {
+               public void run() {
+                   winview.setText("Syncing Fitness Data");
+                   winview.setTextColor(Color.BLACK);
+                   winview.setBackgroundColor(Color.WHITE);
+                   WindowManager.LayoutParams params = new WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT,
+                           WindowManager.LayoutParams.MATCH_PARENT,
+                           WindowManager.LayoutParams.TYPE_PHONE,
+                           WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                           PixelFormat.TRANSLUCENT);
+                   windowManager.addView(winview, params);
+               }
+           };
+
+           mHandler.post(runnableUI);
+
+
+
+            //screenLock.acquire();
             keylock.disableKeyguard();
 
-            ActivityManager ama = (ActivityManager) getApplicationContext().getSystemService(getApplicationContext().ACTIVITY_SERVICE);
+            final ActivityManager ama = (ActivityManager) getApplicationContext().getSystemService(getApplicationContext().ACTIVITY_SERVICE);
             List<ActivityManager.RunningTaskInfo> taskInfo = ama.getRunningTasks(1);
 
+
+           /*int mytaskid = 0;
+           for (int i = 0; i < taskInfo.size(); i++)
+           {
+               Log.i(TAG, "Application executed : "
+                       +taskInfo.get(i).baseActivity.toShortString()
+                       + "\t\t ID: "+taskInfo.get(i).id+"");
+               // bring to front
+               if (taskInfo.get(i).baseActivity.toShortString().indexOf("com.microbean.smartband") > -1) {
+                  // ama.moveTaskToFront(taskInfo.get(i).id, ActivityManager.MOVE_TASK_WITH_HOME);
+                   mytaskid = taskInfo.get(i).id;
+               }
+           }*/
+
+          // ama.moveTaskToFront(21,ActivityManager.MOVE_TASK_NO_USER_ACTION);
+           //ama.moveTaskToFront(mytaskid,ActivityManager.MOVE_TASK_NO_USER_ACTION);
+
             final String savePkgName = taskInfo.get(0).topActivity.getPackageName();
+            final int saveTaskId = taskInfo.get(0).id;
             Log.i(TAG, "CURRENT Activity :" + taskInfo.get(0).topActivity.getClassName());
 
             Intent launchIntent = getPackageManager().getLaunchIntentForPackage("com.xiaomi.hm.health");
@@ -371,14 +447,20 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
             //launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(launchIntent);
 
-
-
-
             final Runnable runnable = new Runnable() {
                 public void run() {
 
+                    //screenLock.release();
                     keylock.reenableKeyguard();
+
+                   // ama.moveTaskToFront(saveTaskId, ActivityManager.MOVE_TASK_NO_USER_ACTION);
+                    //dowork();
+
+
                    // screenLock.release();
+
+                    //ama.moveTaskToFront(mytaskid,ActivityManager.MOVE_TASK_NO_USER_ACTION);
+
 
                     dowork();
 
@@ -395,11 +477,17 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
                         intenthome.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         getApplicationContext().startActivity(intenthome);
                     }
+
+                    windowManager.removeView(winview);
                 }
             };
 
-           mHandler.postDelayed(runnable,1000 * 10);
-           //mHandler.post(runnable);
+
+            mHandler.postDelayed(runnable,1000 * 30);
+         // mHandler.postDelayed(runnable,1000 * 10);
+          // new Thread(runnable).run();
+
+         // mHandler.post(runnable);
 
 
         } else {
@@ -491,7 +579,7 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
                 int descStep = lastStep - saveStep;
                 savesteptimestr = laststeptimestr;
                 saveStep = lastStep;
-                tts.speak(savesteptimestr + " , 增加 " + descStep + " 步", TextToSpeech.QUEUE_FLUSH, null);
+                //tts.speak(savesteptimestr + " , 增加 " + descStep + " 步", TextToSpeech.QUEUE_FLUSH, null);
             }
 
             if (!lasttimestr.equals(savetimestr)) {
@@ -565,7 +653,10 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
             Log.i(TAG, "\tStart: " + dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
             Log.i(TAG, "\tEnd: " + dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
             Log.i(TAG, "getOriginalDataSource: " + dp.getOriginalDataSource().getAppPackageName());
-            Log.i(TAG, "getOriginalDataSource toString: " + dp.getOriginalDataSource().toString());
+            //Log.i(TAG, "getOriginalDataSource toString: " + dp.getOriginalDataSource().toString());
+
+            //if (!dp.getOriginalDataSource().getAppPackageName().equals("com.xiaomi.hm.health"))
+             //   return;
 
                 String value = "";
                 String fieldname = "";
@@ -614,7 +705,7 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
                     //}
                 }
 
-                if (!value.equals("0"))
+                if (!value.equals(""))
                     writeMsg(startTime + "-" + endTime + " : " + fieldname + " : " + value + " (" + deviceinfo + ")");
 
         }
