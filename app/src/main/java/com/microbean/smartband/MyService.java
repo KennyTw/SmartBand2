@@ -447,6 +447,12 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
             //launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(launchIntent);
 
+           final Runnable runnable2 = new Runnable() {
+               public void run() {
+                   windowManager.removeView(winview);
+               }
+           };
+
             final Runnable runnable = new Runnable() {
                 public void run() {
 
@@ -478,7 +484,7 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
                         getApplicationContext().startActivity(intenthome);
                     }
 
-                    windowManager.removeView(winview);
+                    mHandler.postDelayed(runnable2,1000);
                 }
             };
 
@@ -503,11 +509,19 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
     private class readFitnessData extends AsyncTask<Void, Void, Void>   {
         protected Void doInBackground(Void...params) {
             Calendar cal = Calendar.getInstance();
+            Calendar cal2 = Calendar.getInstance();
             Date now = new Date();
             cal.setTime(now);
-          //  cal.add(Calendar.HOUR, 1);
-           // cal.add(Calendar.HOUR, 1);
-            long endTime = cal.getTimeInMillis();
+            cal2.setTime(now);
+
+            //int unroundedMinutes = cal.get(Calendar.MINUTE);
+            //int mod = unroundedMinutes % 10;
+            //cal.add(Calendar.MINUTE, mod == 0 ? 10 : 10 - mod);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+
+            long endTime = cal2.getTimeInMillis();
             cal.add(Calendar.HOUR, -3);
             long startTime = cal.getTimeInMillis();
 
@@ -523,15 +537,14 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
                     // In this example, it's very unlikely that the request is for several hundred
                     // datapoints each consisting of a few steps and a timestamp.  The more likely
                     // scenario is wanting to see how many steps were walked per day, for 7 days.
-                   // .aggregate(DataType.TYPE_HEART_RATE_BPM, DataType.AGGREGATE_HEART_RATE_SUMMARY)
-                    // .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA)
-
-
-                    //.aggregate(DataType.TYPE_ACTIVITY_SEGMENT, DataType.AGGREGATE_ACTIVITY_SUMMARY)
-                    .read(DataType.TYPE_STEP_COUNT_DELTA)
-                    .read(DataType.TYPE_ACTIVITY_SEGMENT)
+                    // .aggregate(DataType.TYPE_HEART_RATE_BPM, DataType.AGGREGATE_HEART_RATE_SUMMARY)
+                    .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA)
+                    .aggregate(DataType.TYPE_ACTIVITY_SEGMENT, DataType.AGGREGATE_ACTIVITY_SUMMARY)
+                    .aggregate(DataType.TYPE_CALORIES_EXPENDED, DataType.AGGREGATE_CALORIES_EXPENDED)
+                     // .read(DataType.TYPE_STEP_COUNT_DELTA)
+                     // .read(DataType.TYPE_ACTIVITY_SEGMENT)
                    // .read(DataType.TYPE_ACTIVITY_SAMPLE)
-                    .read(DataType.TYPE_HEART_RATE_BPM)
+                   // .read(DataType.TYPE_HEART_RATE_BPM)
                    // .read(DataType.TYPE_CALORIES_EXPENDED)
                     //.read(DataType.TYPE_DISTANCE_DELTA)
                     //.read(DataType.TYPE_LOCATION_TRACK)
@@ -542,15 +555,17 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
                                     // Analogous to a "Group By" in SQL, defines how data should be aggregated.
                                     // bucketByTime allows for a time span, whereas bucketBySession would allow
                             // bucketing by "sessions", which would need to be defined in code.
-                  //  .bucketByTime(10, TimeUnit.MINUTES)
+                    //.bucketByActivityType(10,TimeUnit.MINUTES)
+                    .bucketByTime(60, TimeUnit.MINUTES)
+                  //  .bucketBySession(1, TimeUnit.MINUTES)
                     .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
                     .build();
 
 
-            DataReadResult dataReadResult =
-                    Fitness.HistoryApi.readData(mClient, readRequest).await(1, TimeUnit.MINUTES);
+           DataReadResult dataReadResult =
+                   Fitness.HistoryApi.readData(mClient, readRequest).await(1, TimeUnit.MINUTES);
 
-           // DailyTotalResult dataReadResult = Fitness.HistoryApi.readDailyTotal(mClient, DataType.TYPE_ACTIVITY_SEGMENT).await(1, TimeUnit.MINUTES);
+            //DailyTotalResult dataReadResult = Fitness.HistoryApi.readDailyTotal(mClient, DataType.TYPE_STEP_COUNT_DELTA).await(1, TimeUnit.MINUTES);
 
             //dumpDataSet(dataReadResult.getTotal());
 
@@ -699,6 +714,7 @@ public class MyService extends Service  implements TextToSpeech.OnInitListener {
                             } else if (value.equals("3")) {
                                 value = "not moving";
                             }
+                            break;
                         } else if (dp.getDataType().getName().equals("com.google.calories.expended") ) {
                             fieldname = "calories";
                         }

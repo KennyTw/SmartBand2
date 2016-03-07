@@ -12,9 +12,11 @@
     tools:context="com.microbean.smartband.MainActivity"
     tools:showIn="@layout/activity_main">
 
-    <EditText
+    <TextView
         android:id="@+id/textEdit1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:maxLines = "1024"
+        android:scrollbars = "vertical"
          />
 </RelativeLayout>
